@@ -9,7 +9,12 @@ use iced_x86::{
 };
 use num_enum::TryFromPrimitive;
 use path_absolutize::Absolutize;
-use std::{cell::OnceCell, io, mem, path::Path};
+use std::{
+    cell::OnceCell,
+    io,
+    mem::{self, MaybeUninit},
+    path::Path,
+};
 use widestring::{u16cstr, U16CString};
 use winapi::shared::{
     minwindef::{BOOL, DWORD, FALSE, HMODULE},
@@ -27,7 +32,7 @@ use crate::{
 #[cfg(all(target_arch = "x86_64", feature = "into-x86-from-x64"))]
 use {
     goblin::pe::PE,
-    std::{convert::TryInto, fs, mem::MaybeUninit, path::PathBuf, time::Duration},
+    std::{convert::TryInto, fs, path::PathBuf, time::Duration},
     widestring::U16Str,
     winapi::{shared::minwindef::MAX_PATH, um::wow64apiset::GetSystemWow64DirectoryW},
 };
@@ -363,7 +368,7 @@ impl Syringe {
 
     #[cfg(all(target_arch = "x86_64", feature = "into-x86-from-x64"))]
     fn wow64_dir() -> Result<PathBuf, io::Error> {
-        let mut path_buf = MaybeUninit::uninit_array::<MAX_PATH>();
+        let mut path_buf = [const { MaybeUninit::uninit() }; MAX_PATH];
         let path_buf_len: u32 = path_buf.len().try_into().unwrap();
         let result = unsafe { GetSystemWow64DirectoryW(path_buf[0].as_mut_ptr(), path_buf_len) };
         if result == 0 {
